@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Universo Galáctico de Amor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      touch-action: manipulation;
+      background: #000;
+      background-image: radial-gradient(ellipse at center, #1a0033 0%, #000000 100%);
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .te-amo {
+      position: absolute;
+      font-family: 'Dancing Script', cursive;
+      font-size: 5vw;
+      font-weight: bold;
+      text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+      opacity: 1;
+      animation: flotar 8s ease-out forwards;
+      pointer-events: none;
+      z-index: 5;
+      transform-origin: center;
+    }
+
+    @keyframes flotar {
+      0% { transform: translateY(0) scale(0.8) rotate(-5deg); opacity: 1; }
+      50% { transform: translateY(-60px) scale(1.2) rotate(5deg); opacity: 0.9; }
+      100% { transform: translateY(-150px) scale(1.5) rotate(0); opacity: 0; }
+    }
+
+    .mensaje-especial {
+      position: absolute;
+      font-family: 'Pacifico', cursive;
+      font-size: 6vw;
+      color: #ff9ec6;
+      text-shadow: 0 0 10px #ff66b2, 0 0 20px #ff0080, 0 0 30px #ff0080;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+      text-align: center;
+      width: 100%;
+      top: 40%;
+      animation: aparecer 6s ease-in-out forwards;
+      transform: translateY(-50%);
+      padding: 0 10px;
+      box-sizing: border-box;
+    }
+
+    @keyframes aparecer {
+      0% { opacity: 0; transform: translateY(-50%) scale(0.5); }
+      20% { opacity: 1; transform: translateY(-50%) scale(1.1); }
+      30%, 80% { opacity: 1; transform: translateY(-50%) scale(1); }
+      100% { opacity: 0; transform: translateY(-50%) scale(0.5); }
+    }
+
+    #nombre-enamorada {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      font-family: 'Pacifico', cursive;
+      font-size: 5vw;
+      color: white;
+      text-shadow: 0 0 10px #ff80c0;
+      opacity: 0.8;
+    }
+
+    .estrella {
+      position: absolute;
+      background-color: white;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      animation: titilar 5s infinite alternate;
+    }
+
+    @keyframes titilar {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    #play-button {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+      background: #ff3399;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 15px 30px;
+      font-size: 18px;
+      font-family: 'Pacifico', cursive;
+      cursor: pointer;
+      box-shadow: 0 0 20px #ff0080;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="fireworks"></canvas>
+  <div id="nombre-enamorada"></div>
+  <button id="play-button">Toca para comenzar</button>
+
+  <!-- Música de fondo -->
+  <audio id="musica" preload="auto" loop>
+    <source src="assets/audio/musica.mp3" type="audio/mpeg" />
+  </audio>
+
+  <script>
+    const canvas = document.getElementById("fireworks");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const fireworks = [];
+    const musica = document.getElementById("musica");
+    const playButton = document.getElementById("play-button");
+    
+    // Sonidos de vuelo (ascenso) y explosión
+    const vueloSounds = [
+      new Audio("assets/audio/ascenso1.mp3"),
+      new Audio("assets/audio/ascenso2.mp3")
+    ];
+    
+    const explosionSounds = [
+      new Audio("assets/audio/explosion1.mp3"),
+      new Audio("assets/audio/explosion2.mp3"),
+      new Audio("assets/audio/explosion3.mp3"),
+      new Audio("assets/audio/explosion4.mp3")
+    ];
+    
+    // Configurar volumen
+    musica.volume = 0.35;
+    vueloSounds.forEach(sound => {
+      sound.volume = 0.55;
+      sound.preload = "auto";
+    });
+    explosionSounds.forEach(sound => {
+      sound.volume = 0.65;
+      sound.preload = "auto";
+    });
+    
+    const mensajesEspeciales = [
+      "Feliz Año Nuevo 2026, amor de mi vida",
+       "Sofia",
+      "Gracias por ser mi mejor comienzo y mi mejor final 💕",
+      "Que este 2026 nos regale más besos <3",
+      "más abrazos y muchos sueños juntos",
+      "Empiezo el 2026 contigo y no necesito nada más 🥂"
+    ];
+    const coloresRomanticos = [
+      "#ff9ec6", "#ff80c0", "#ff66b2", "#ff4da6", "#ff3399",
+      "#ff1a8c", "#ff0080", "#e60073", "#cc0066", "#b30059"
+    ];
+
+    // Variables para controlar mensajes y fuegos artificiales
+    let indiceMensajeActual = 0;
+    let intervaloMensajes;
+    let intervaloFireworks;
+    let tiempoEntreFireworks = 2500; // 2.5 segundos entre fuegos artificiales
+    
+    // Contador para controlar cuántos fuegos artificiales han sonado
+    let contadorSonidosFireworks = 0;
+    const maxSonidosFireworks = 10; // Número máximo de fuegos con sonido
+
+    // Crear estrellas de fondo
+    function crearEstrellas() {
+      for (let i = 0; i < 100; i++) {
+        const estrella = document.createElement("div");
+        estrella.className = "estrella";
+        estrella.style.width = `${Math.random() * 3 + 1}px`;
+        estrella.style.height = estrella.style.width;
+        estrella.style.left = `${Math.random() * 100}%`;
+        estrella.style.top = `${Math.random() * 100}%`;
+        estrella.style.animationDelay = `${Math.random() * 5}s`;
+        estrella.style.opacity = Math.random() * 0.5 + 0.1;
+        document.body.appendChild(estrella);
+      }
+    }
+
+    function iniciarExperiencia() {
+      playButton.style.display = "none";
+      crearEstrellas();
+      activarMusica();
+    }
+
+    function activarMusica() {
+      // En móviles necesitamos reproducir después de una interacción del usuario
+      const playPromise = musica.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          // Mostrar botón nuevamente si hay error
+          playButton.style.display = "block";
+        });
+      }
+      
+      iniciarSecuenciaMensajes();
+      iniciarSecuenciaFireworks();
+    }
+
+    function iniciarSecuenciaMensajes() {
+      mostrarMensajeEspecial(mensajesEspeciales[indiceMensajeActual]);
+      indiceMensajeActual++;
+      
+      intervaloMensajes = setInterval(() => {
+        if (indiceMensajeActual < mensajesEspeciales.length) {
+          mostrarMensajeEspecial(mensajesEspeciales[indiceMensajeActual]);
+          indiceMensajeActual++;
+        } else {
+          indiceMensajeActual = 0;
+          clearInterval(intervaloMensajes);
+          setTimeout(iniciarSecuenciaMensajes, 8000);
+        }
+      }, 6000);
+    }
+
+    function iniciarSecuenciaFireworks() {
+      // Lanzar el primer fuego artificial
+      lanzarFuegoAleatorio();
+      
+      // Configurar intervalo para fuegos artificiales más espaciados
+      intervaloFireworks = setInterval(() => {
+        lanzarFuegoAleatorio();
+      }, tiempoEntreFireworks);
+    }
+
+    function lanzarFuegoAleatorio(x, y) {
+      const posX = x || random(canvas.width * 0.2, canvas.width * 0.8);
+      const posY = y || random(canvas.height * 0.2, canvas.height * 0.5);
+      fireworks.push(new Firework(posX, posY));
+    }
+
+    function mostrarMensajeEspecial(mensaje) {
+      const mensajeElement = document.createElement("div");
+      mensajeElement.className = "mensaje-especial";
+      mensajeElement.innerText = mensaje;
+      document.body.appendChild(mensajeElement);
+      
+      setTimeout(() => {
+        mensajeElement.remove();
+      }, 6000);
+    }
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    class HeartParticle {
+      constructor(x, y, angle, color) {
+        const t = angle;
+        const size = 10;
+        this.x = x;
+        this.y = y;
+        this.vx = size * 16 * Math.pow(Math.sin(t), 3) * 0.08;
+        this.vy = -size * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * 0.08;
+        this.alpha = 1;
+        this.color = color;
+        this.size = random(5, 10);
+        this.rotation = random(0, Math.PI * 2);
+        this.rotationSpeed = random(-0.05, 0.05);
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+        this.vy += 0.05;
+        this.alpha -= 0.002;
+        this.rotation += this.rotationSpeed;
+      }
+
+      drawHeart(ctx, x, y, size, color, alpha, rotation) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.scale(size, size);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(0, -3, -5, -3, -5, 0);
+        ctx.bezierCurveTo(-5, 3, 0, 5, 0, 7);
+        ctx.bezierCurveTo(0, 5, 5, 3, 5, 0);
+        ctx.bezierCurveTo(5, -3, 0, -3, 0, 0);
+        ctx.closePath();
+        
+        const grd = ctx.createRadialGradient(0, 0, 1, 0, 0, 7);
+        grd.addColorStop(0, color);
+        grd.addColorStop(1, `${color}00`);
+        
+        ctx.fillStyle = grd;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
+
+      draw() {
+        if (this.alpha <= 0) return;
+        this.drawHeart(ctx, this.x, this.y, this.size / 10, this.color, this.alpha, this.rotation);
+      }
+    }
+
+    class Firework {
+      constructor(x, y) {
+        this.x = x || random(canvas.width * 0.2, canvas.width * 0.8);
+        this.y = canvas.height;
+        this.targetY = y || random(canvas.height * 0.2, canvas.height * 0.5);
+        this.exploded = false;
+        this.particles = [];
+        this.color = coloresRomanticos[Math.floor(random(0, coloresRomanticos.length))];
+        this.speed = random(2, 4); // Velocidad reducida
+        this.size = random(3, 6);
+        this.sparkles = [];
+        this.vueloSound = null;
+        this.explosionSoundPlayed = false;
+        
+        // Solo reproducir sonido de vuelo si no hemos alcanzado el límite
+        if (contadorSonidosFireworks < maxSonidosFireworks) {
+          this.playVueloSound();
+        }
+        
+        for (let i = 0; i < 5; i++) {
+          this.sparkles.push({
+            x: this.x,
+            y: this.y,
+            size: random(1, 3),
+            alpha: 1,
+            speed: random(-1, 1)
+          });
+        }
+      }
+
+      playVueloSound() {
+        this.vueloSound = vueloSounds[Math.floor(Math.random() * vueloSounds.length)];
+        this.vueloSound.currentTime = 0;
+        this.vueloSound.play();
+      }
+
+      update() {
+        if (!this.exploded) {
+          this.y -= this.speed;
+          
+          this.sparkles.forEach(spark => {
+            spark.x += random(-1, 1);
+            spark.y -= this.speed * 0.8;
+            spark.alpha -= 0.02;
+          });
+          
+          if (Math.random() < 0.3) {
+            this.sparkles.push({
+              x: this.x,
+              y: this.y,
+              size: random(1, 3),
+              alpha: 1,
+              speed: random(-1, 1)
+            });
+          }
+          
+          this.sparkles = this.sparkles.filter(spark => spark.alpha > 0);
+
+          if (this.y <= this.targetY) {
+            this.explode();
+            if (this.vueloSound) {
+              this.vueloSound.pause();
+            }
+          }
+        }
+        
+        this.particles.forEach(p => p.update());
+        this.particles = this.particles.filter(p => p.alpha > 0);
+      }
+
+      explode() {
+        this.exploded = true;
+        
+        // Solo reproducir sonido de explosión si no hemos alcanzado el límite
+        if (contadorSonidosFireworks < maxSonidosFireworks && !this.explosionSoundPlayed) {
+          const randomSound = explosionSounds[Math.floor(Math.random() * explosionSounds.length)];
+          randomSound.currentTime = 0;
+          randomSound.play();
+          this.explosionSoundPlayed = true;
+          
+          // Incrementar el contador de sonidos
+          contadorSonidosFireworks++;
+        }
+        
+        for (let a = 0; a < Math.PI * 2; a += 0.04) {
+          this.particles.push(new HeartParticle(this.x, this.y, a, this.color));
+        }
+        
+        if (Math.random() < 0.3) {
+          for (let a = 0; a < Math.PI * 2; a += 0.1) {
+            const t = a;
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+            this.particles.push(new HeartParticle(
+              this.x + x * 2, 
+              this.y + y * 2, 
+              a, 
+              coloresRomanticos[Math.floor(random(0, coloresRomanticos.length))]
+            ));
+          }
+        }
+        
+        for (let i = 0; i < 5; i++) {
+          crearTextoTeAmo(
+            this.x + random(-80, 80), 
+            this.y + random(-50, 50), 
+            this.color
+          );
+        }
+      }
+
+      draw() {
+        if (!this.exploded) {
+          this.sparkles.forEach(spark => {
+            ctx.beginPath();
+            ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
+            ctx.fillStyle = `${this.color.replace(')', `, ${spark.alpha})`)}`;
+            ctx.fill();
+          });
+          
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.fill();
+          
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y + this.size);
+          ctx.lineTo(this.x - this.size/2, this.y + this.size * 2);
+          ctx.lineTo(this.x + this.size/2, this.y + this.size * 2);
+          ctx.closePath();
+          ctx.fillStyle = `${this.color.replace(')', `, 0.7)`)}`;
+          ctx.fill();
+        }
+        
+        this.particles.forEach(p => p.draw());
+      }
+    }
+
+    function crearTextoTeAmo(x, y, color) {
+      const texto = document.createElement("div");
+      texto.className = "te-amo";
+      texto.innerText = Math.random() < 0.7 ? "TE AMO" : "❤️";
+      texto.style.left = `${x}px`;
+      texto.style.top = `${y}px`;
+      texto.style.color = color;
+      texto.style.animationDuration = `${random(6, 10)}s`;
+      document.body.appendChild(texto);
+      setTimeout(() => texto.remove(), 10000);
+    }
+
+    function getTouchPos(e) {
+      if (e.touches) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else {
+        return { x: e.clientX, y: e.clientY };
+      }
+    }
+
+    // Eventos táctiles para móviles
+    document.addEventListener("click", e => {
+      const pos = getTouchPos(e);
+      lanzarFuegoAleatorio(pos.x, pos.y);
+    });
+
+    document.addEventListener("touchstart", e => {
+      e.preventDefault();
+      const pos = getTouchPos(e);
+      lanzarFuegoAleatorio(pos.x, pos.y);
+    }, { passive: false });
+
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // Botón de inicio para móviles
+    playButton.addEventListener("click", iniciarExperiencia);
+    playButton.addEventListener("touchstart", iniciarExperiencia);
+
+    function animate() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        const x = random(0, canvas.width);
+        const y = random(0, canvas.height);
+        const size = random(0.5, 2);
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${random(0.1, 0.7)})`;
+        ctx.fill();
+      }
+
+      for (let i = fireworks.length - 1; i >= 0; i--) {
+        fireworks[i].update();
+        fireworks[i].draw();
+        
+        if (fireworks[i].exploded && fireworks[i].particles.length === 0) {
+          fireworks.splice(i, 1);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
